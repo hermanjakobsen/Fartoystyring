@@ -21,7 +21,7 @@
 
 %% USER INPUTS
 h = 0.1;                     % sample time (s)
-N  = 5000;                    % number of samples. Should be adjusted
+N  = 3000;                    % number of samples. Should be adjusted
 
 % model parameters
 m = 180;

@@ -22,7 +22,7 @@
 
 %% USER INPUTS
 h = 0.1;                     % sample time (s)
-N  = 5000;                    % number of samples. Should be adjusted
+N  = 3000;                    % number of samples. Should be adjusted
 
 % model parameters
 m = 180;
@@ -46,14 +46,18 @@ q = euler2q(phi,theta,psi);   % transform initial Euler angles to q
 
 w = [0 0 0]';                 % initial angular rates
 
-table = zeros(N+1,14);        % memory allocation
+table = zeros(N+1,17);        % memory allocation
 
 %% FOR-END LOOP
 for i = 1:N+1
    t = (i-1)*h;                  % time
    
    % Control and reference signals
-   qd = euler2q(0*deg2rad, 15*cos(0.1*t)*deg2rad, 10*sin(0.05*t)*deg2rad);
+   phi_d = 0*deg2rad;
+   theta_d = 15*cos(0.1*t)*deg2rad;
+   psi_d = 10*sin(0.05*t)*deg2rad;
+   
+   qd = euler2q(phi_d, theta_d, psi_d);
    qd_bar = [qd(1) -qd(2) -qd(3) -qd(4)]';
    
    eta1 = qd_bar(1);
@@ -75,7 +79,7 @@ for i = 1:N+1
    q_dot = J2*w;                        % quaternion kinematics
    w_dot = I_inv*(Smtrx(I*w)*w + tau);  % rigid-body kinetics
    
-   table(i,:) = [t q' phi theta psi w' tau'];  % store data in table
+   table(i,:) = [t q' phi theta psi w' tau' phi_d theta_d psi_d];  % store data in table
    
    q = q + h*q_dot;	             % Euler integration
    w = w + h*w_dot;
@@ -91,6 +95,9 @@ theta   = rad2deg*table(:,7);
 psi     = rad2deg*table(:,8);
 w       = rad2deg*table(:,9:11);  
 tau     = table(:,12:14);
+phi_d   = rad2deg*table(:,15);
+theta_d = rad2deg*table(:,16);
+psi_d   = rad2deg*table(:,17);
 
 
 figure (1); clf;
@@ -98,9 +105,12 @@ hold on;
 plot(t, phi, 'b');
 plot(t, theta, 'r');
 plot(t, psi, 'g');
+plot(t, phi_d,'--b');
+plot(t, theta_d,'--r');
+plot(t, psi_d,'--g');
 hold off;
 grid on;
-legend('\phi', '\theta', '\psi');
+legend('\phi', '\theta', '\psi', '\phi_d', '\theta_d', '\psi_d');
 title('Euler angles');
 xlabel('time [s]'); 
 ylabel('angle [deg]');
