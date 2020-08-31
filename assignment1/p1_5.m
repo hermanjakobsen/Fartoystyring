@@ -33,6 +33,7 @@ I_inv = inv(I);
 % controller parameters
 kp = 20;
 kd = 400;
+Kd = eye(3)*kd;
 
 % constants
 deg2rad = pi/180;   
@@ -47,6 +48,18 @@ q = euler2q(phi,theta,psi);   % transform initial Euler angles to q
 w = [0 0 0]';                 % initial angular rates
 
 table = zeros(N+1,17);        % memory allocation
+
+%% Eigen calc
+
+
+A = [ 0*eye(3)         0.5*eye(3);
+    -I_inv*kp   -I_inv*Kd  
+    ];
+eigval = eig(A);
+
+%Alternatively
+e1 = (-I_inv*Kd+sqrt((I_inv*Kd)^2-2*eye(3)*I_inv*kp))/2;
+e2 = (-I_inv*Kd-sqrt((I_inv*Kd)^2-2*eye(3)*I_inv*kp))/2;
 
 %% FOR-END LOOP
 for i = 1:N+1

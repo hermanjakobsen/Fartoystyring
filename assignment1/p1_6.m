@@ -67,7 +67,7 @@ for i = 1:N+1
    trans = Tzyx(phi_d, theta_d);
    w_d = trans\dTheta_d;
    
-   w_tilde = w-w_d;
+   w_tilde = w-w_d
    
    qd = euler2q(phi_d,theta_d,psi_d);
    qd_bar = [qd(1) -qd(2) -qd(3) -qd(4)]';
