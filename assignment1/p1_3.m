@@ -18,10 +18,11 @@
 %                            q = unit quaternion vector (4x1)
 %
 % Author:                   2018-08-15 Thor I. Fossen and Håkon H. Helgesen
-
+%%
+clc; clear all; close all;
 %% USER INPUTS
 h = 0.1;                     % sample time (s)
-N  = 5000;                    % number of samples. Should be adjusted
+N  = 3000;                    % number of samples. Should be adjusted
 
 % model parameters
 m = 180;
@@ -32,6 +33,7 @@ I_inv = inv(I);
 % controller parameters
 kp = 2;
 kd = 40;
+Kd = 40*eye(3);
 
 % constants
 deg2rad = pi/180;   
@@ -46,6 +48,19 @@ q = euler2q(phi,theta,psi);   % transform initial Euler angles to q
 w = [0 0 0]';                 % initial angular rates
 
 table = zeros(N+1,14);        % memory allocation
+
+%% Eigen calc
+
+
+A = [ 0*eye(3)         0.5*eye(3);
+    -I_inv*kp   -I_inv*Kd  
+    ];
+eigval = eig(A);
+
+%Alternatively
+e1 = (-I_inv*Kd+sqrt((I_inv*Kd)^2-2*eye(3)*I_inv*kp))/2;
+e2 = (-I_inv*Kd-sqrt((I_inv*Kd)^2-2*eye(3)*I_inv*kp))/2;
+
 
 %% FOR-END LOOP
 for i = 1:N+1

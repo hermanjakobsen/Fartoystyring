@@ -23,7 +23,7 @@ clear variable;
 
 %% USER INPUTS
 h = 0.1;                     % sample time (s)
-N  = 5000;                    % number of samples. Should be adjusted
+N  = 3000;                    % number of samples. Should be adjusted
 
 % model parameters
 m = 180;
@@ -47,7 +47,7 @@ q = euler2q(phi,theta,psi);   % transform initial Euler angles to q
 
 w = [0 0 0]';                 % initial angular rates
 
-table = zeros(N+1,14);        % memory allocation
+table = zeros(N+1,20);        % memory allocation
 
 %% FOR-END LOOP
 for i = 1:N+1
@@ -67,7 +67,7 @@ for i = 1:N+1
    trans = Tzyx(phi_d, theta_d);
    w_d = trans\dTheta_d;
    
-   w_tilde = w-w_d;
+   w_tilde = w-w_d
    
    qd = euler2q(phi_d,theta_d,psi_d);
    qd_bar = [qd(1) -qd(2) -qd(3) -qd(4)]';
@@ -91,7 +91,7 @@ for i = 1:N+1
    q_dot = J2*w;                        % quaternion kinematics
    w_dot = I_inv*(Smtrx(I*w)*w + tau);  % rigid-body kinetics
    
-   table(i,:) = [t q' phi theta psi w' tau'];  % store data in table
+   table(i,:) = [t q' phi theta psi w' tau', phi_d, theta_d, psi_d, w_d'];  % store data in table
    
    q = q + h*q_dot;	             % Euler integration
    w = w + h*w_dot;
@@ -107,6 +107,10 @@ theta   = rad2deg*table(:,7);
 psi     = rad2deg*table(:,8);
 w       = rad2deg*table(:,9:11);  
 tau     = table(:,12:14);
+phi_d   = rad2deg*table(:,15);
+theta_d = rad2deg*table(:,16);
+psi_d   = rad2deg*table(:,17);
+w_d     = rad2deg*table(:,18:20);
 
 
 figure (1); clf;
@@ -114,9 +118,12 @@ hold on;
 plot(t, phi, 'b');
 plot(t, theta, 'r');
 plot(t, psi, 'g');
+plot(t, phi_d,'--b');
+plot(t, theta_d,'--r');
+plot(t, psi_d,'--g');
 hold off;
 grid on;
-legend('\phi', '\theta', '\psi');
+legend('\phi', '\theta', '\psi', '\phi_d', '\theta_d', '\psi_d');
 title('Euler angles');
 xlabel('time [s]'); 
 ylabel('angle [deg]');
@@ -126,9 +133,12 @@ hold on;
 plot(t, w(:,1), 'b');
 plot(t, w(:,2), 'r');
 plot(t, w(:,3), 'g');
+plot(t, w_d(:,1), '--b');
+plot(t, w_d(:,2), '--r');
+plot(t, w_d(:,3), '--g');
 hold off;
 grid on;
-legend('x', 'y', 'z');
+legend('x', 'y', 'z', 'x_d', 'y_d', 'z_d');
 title('Angular velocities');
 xlabel('time [s]'); 
 ylabel('angular rate [deg/s]');
