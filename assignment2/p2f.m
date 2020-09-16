@@ -26,6 +26,7 @@ zeta_chi = 0.9;                 %Design parameter
 kp_chi = 2*zeta_chi*omega_n_chi*V_g/g; 
 ki_chi = (omega_n_chi)^2 * V_g/g;
 
+d = 1.5*pi/180;
 
 %System matrices
 A = [

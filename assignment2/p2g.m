@@ -28,6 +28,7 @@ ki_chi = (omega_n_chi)^2 * V_g/g;
 
 k_intwind = kp_phi*kp_chi*0.5;
 
+d = 1.5*pi/180;
 %System matrices
 A = [
     -0.322  0.052   0.028   -1.12   0.002;
