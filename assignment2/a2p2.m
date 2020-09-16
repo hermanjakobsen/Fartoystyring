@@ -39,7 +39,7 @@ figure(1), rlocus(sys);
 % Outer loop control
 W_chi = 10; %bandwidht sep, kan endres på (typisk 5-10)
 omega_n_chi = omega_n_phi/W_chi; 
-zeta_chi = 0.6; %Design parameter
+zeta_chi = 0.9; %Design parameter
 kp_chi = 2*zeta_chi*omega_n_chi*V_g/g; 
 ki_chi = (omega_n_chi)^2 * V_g/g;
 
