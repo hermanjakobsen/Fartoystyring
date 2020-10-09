@@ -1,7 +1,11 @@
 % Project in TTK4190 Guidance and Control of Vehicles 
 %
-% Author:           My name
-% Study program:    My study program
+% Author:           Herman Kolstad Jakobsen
+%                   Aksel Heggernes
+%                   Sondre Holm Fyhn
+%                   Iver Myklebust
+%
+% Study program:    MTTK
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% USER INPUTS
@@ -34,11 +38,25 @@ Yrdot =  9.3677e5;
 Nvdot =  Yrdot;
 Nrdot = -2.4283e10;
 
+% define default values for other added masses
+Xvdot = 0;
+Xrdot = 0;
+Yudot = 0;
+Nudot = 0;
+
 % rigid-body mass matrix
 MRB = [ m 0    0 
         0 m    m*xg
         0 m*xg Iz ];
-Minv = inv(MRB);
+MRBinv = inv(MRB);
+
+% added mass
+MA = -[ Xudot   Xvdot   Xrdot
+        Yudot   Yvdot   Yrdot
+        Nudot   Nvdot   Nrdot];
+
+M = MRB + MA;
+Minv = inv(M);
 
 % input matrix
 t_thr = 0.05;           % thrust deduction number
@@ -70,6 +88,16 @@ for i=1:Ns+1
                         xg 0  0  ];
     R = Rzyx(0,0,eta(3));
     
+    % added mass coriolis from property 6.2
+    a1 = Xudot*nu(1)+Xvdot*nu(2)+Xrdot*nu(3);
+    a2 = Yudot*nu(1)+Yvdot*nu(2)+Yrdot*nu(3);
+                    
+    CA = [  0       0   a2
+            0       0   -a1
+            -a2     a1  0   ];
+                    
+    C = CRB+CA;
+    
     % reference models
     psi_d = psi_ref;
     r_d = 0;
@@ -85,7 +113,7 @@ for i=1:Ns+1
     % ship dynamics
     u = [ thr delta ]';
     tau = B * u;
-    nu_dot = Minv * (tau - CRB * nu); 
+    nu_dot = Minv * (tau - C * nu); 
     eta_dot = R * nu;    
     
     % Rudder saturation and dynamics (Sections 9.5.2)
