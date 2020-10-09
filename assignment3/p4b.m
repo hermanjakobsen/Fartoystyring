@@ -65,7 +65,7 @@ Minv = inv(M);
 
 % linear damping
 Xu = -(m-Xudot)/T1;
-Yv = -(-Yvdot)/T2;
+Yv = -(m-Yvdot)/T2;
 Nr = -(Iz-Nrdot)/T6;
 
 D = -diag([Xu Yv Nr]);  % linear damping matrix
