@@ -28,6 +28,7 @@ Dia = 3.3;              % propeller diameter (m)
 rho = 1025;             % density of water (m/s^3)
 
 S = L*B;                % wetted hull surface (m/s^2)
+Cd_2D = Hoerner(B,L);   % 2-D drag coefficient
 
 % rudder limitations
 delta_max  = 40 * pi/180;        % max rudder angle      (rad)
@@ -121,12 +122,19 @@ for i=1:Ns+1
     
     X = -1/2*rho*S*(1+k)*Cf*nu(1)*abs(nu(1));   % nonlinear surge damping
     
+    % cross-flow drag
+    % Strip theory: cross−flow drag integrals
+    Yh = 0;     % start value of integral
+    Nh = 0;     % start value of integral
+    dx = L/10;  % 10 strips
+    for xL = -L/2:dx:L/2
+        Ucf = abs(nu(2) + xL * nu(3)) * (nu(2) + xL * nu(3));
+        Yh = Yh - 0.5 * rho * T * Cd_2D * Ucf * dx;         % sway force
+        Nh = Nh - 0.5 * rho * T * Cd_2D * xL * Ucf * dx;    % yaw moment
+    end
     
-   
     % nonlinear damping matrix
-    Dn = [  X       0       0
-            0       0       0
-            0       0       0   ];
+    Dn = diag([X Yh Nh]); % NB!! DISCUSSION FORUM STATES THAT THIS SHOULD BE STRUCTURED AS A 3x1 VECTOR???
 
     % reference models
     psi_d = psi_ref;
