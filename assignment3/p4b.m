@@ -27,6 +27,8 @@ KT = 0.7;               % propeller coefficient (-)
 Dia = 3.3;              % propeller diameter (m)
 rho = 1025;             % density of water (m/s^3)
 
+S = L*B;                % wetted hull surface (m/s^2)
+
 % rudder limitations
 delta_max  = 40 * pi/180;        % max rudder angle      (rad)
 Ddelta_max = 5  * pi/180;        % max rudder derivative (rad/s)
@@ -110,6 +112,22 @@ for i=1:Ns+1
                     
     C = CRB+CA;
     
+    % nonlinear surge damping (no current => u_r = u)
+    k = 0.1;                                % some magical constant
+    epsilon = 0.001;                        % small number to ensure Cf is well defined
+    visc = 1e-6;                            % kinematic viscosity (m/s^2)
+    Rn = L/visc*abs(nu(1));                 % reynolds number 
+    Cf = 0.075/((log10(Rn)-2)^2+epsilon);   % flat plate friction
+    
+    X = -1/2*rho*S*(1+k)*Cf*nu(1)*abs(nu(1));   % nonlinear surge damping
+    
+    
+   
+    % nonlinear damping matrix
+    Dn = [  X       0       0
+            0       0       0
+            0       0       0   ];
+
     % reference models
     psi_d = psi_ref;
     r_d = 0;
@@ -125,7 +143,7 @@ for i=1:Ns+1
     % ship dynamics
     u = [ thr delta ]';
     tau = B * u;
-    nu_dot = Minv * (tau - C * nu); 
+    nu_dot = Minv * (tau - C * nu - D * nu - Dn * nu); 
     eta_dot = R * nu;    
     
     % Rudder saturation and dynamics (Sections 9.5.2)
