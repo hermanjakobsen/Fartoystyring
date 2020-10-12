@@ -134,7 +134,7 @@ for i=1:Ns+1
     end
     
     % nonlinear damping matrix
-    Dn = diag([X Yh Nh]); % NB!! DISCUSSION FORUM STATES THAT THIS SHOULD BE STRUCTURED AS A 3x1 VECTOR???
+    Dn = diag([X Yh Nh]); 
 
     % reference models
     psi_d = psi_ref;
