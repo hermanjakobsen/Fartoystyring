@@ -1,7 +1,11 @@
 % Project in TTK4190 Guidance and Control of Vehicles 
 %
-% Author:           My name
-% Study program:    My study program
+% Author:           Herman Kolstad Jakobsen
+%                   Aksel Heggernes
+%                   Sondre Holm Fyhn
+%                   Iver Myklebust
+%
+% Study program:    MTTK
 
 clear;
 clc;
@@ -109,6 +113,7 @@ b_lin = [-2*U_d*Y_delta -2*U_d*N_delta]';
 % initial states
 eta = [0 0 0]';
 nu  = [0.1 0 0]';
+nu_c = [0 0 0]';
 delta = 0;
 n = 0;
 
@@ -123,7 +128,10 @@ for i=1:Ns+1
     R = Rzyx(0,0,eta(3));
     
     % current (should be added here)
-    nu_r = nu;
+    nu_c(1) = Vc*cos(betaVc - eta(3));  % surge current
+    nu_c(2) = Vc*sin(betaVc - eta(3));  % sway current
+    
+    nu_r = nu - nu_c;
     
     % wind (should be added here)
     if t > 200
@@ -179,7 +187,7 @@ for i=1:Ns+1
     % ship dynamics
     u = [ thr delta ]';
     tau = Bu(nu_r(1),delta) * u;
-    nu_dot = Minv * (tau_env + tau - N * nu_r - d); 
+    nu_dot = [nu(3)*nu_c(2) -nu(3)*nu_c(1) 0]' + Minv * (tau_env + tau - N * nu_r - d); 
     eta_dot = R * nu;    
     
     % Rudder saturation and dynamics (Sections 9.5.2)
