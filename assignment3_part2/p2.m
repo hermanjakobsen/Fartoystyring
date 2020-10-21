@@ -229,7 +229,7 @@ for i=1:Ns+1
     % control law
     e_psi = ssa(eta(3)-psi_d);
     e_r = nu(3)-r_d;
-    delta_c = -Kp*e_psi-Ki*z-Kd*e_r;    % rudder angle command (rad)
+    delta_c_unsat = -Kp*e_psi-Ki*z-Kd*e_r;    % rudder angle command (rad)
     
     % ship dynamics
     u = [ thr delta ]';
@@ -238,8 +238,11 @@ for i=1:Ns+1
     eta_dot = R * nu;    
     
     % Rudder saturation and dynamics (Sections 9.5.2)
-    if abs(delta_c) >= delta_max
-        delta_c = sign(delta_c)*delta_max;
+    if abs(delta_c_unsat) >= delta_max
+        delta_c = sign(delta_c_unsat)*delta_max;
+        z = z-(h/Ki)*(delta_c-delta_c_unsat);           % anti-windup (not necessary for this problem, but good practice to implement)
+    else
+        delta_c = delta_c_unsat;
     end
     
     delta_dot = delta_c - delta;
