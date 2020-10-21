@@ -259,9 +259,8 @@ for i=1:Ns+1
     
     Td = U_d*Xu/(t_thr-1);                      % desired thrust (N)
     n_d = sqrt(Td/(rho * Dia^4 * KT));          % desired propeller speed (rps)
-    if n < 0
-        n_d = -n_d;
-    end
+                                                % SHOULD ALSO HANDLE
+                                                % NEGATIVE Td
     
     Qf = 0;                                     % friction torque (Nm)
     Qd =  rho * Dia^4 * KQ * abs(n_d) * n_d;    % desired propeller moment (Nm)
