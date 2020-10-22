@@ -121,17 +121,17 @@ N_lin = CRB_lin + CA_lin + D(2:3,2:3);
 b_lin = [-2*U_d*Y_delta -2*U_d*N_delta]';
 
 [num, den] = ss2tf(-M_lin_inv*N_lin, M_lin_inv*b_lin, [0 1], 0);
+
+K_lin = num(3)/den(3);            % gain can be found by using the steady-state value (s=0) of the transfer function
+
 poles_lin = roots(den);
+zeros_lin = roots(num);
 
-K_lin = num(3);             % following values are calculated using eq. (7.20)
-                            % NB!!!! K_LIN DOES IS NOT EQUAL TO SOLUTION
-                            % MANUAL FOR SOME REASON
-T3_lin = num(2) / K_lin;
-
+T3_lin = -1/zeros_lin;   
 T1_lin = -1/poles_lin(1);
 T2_lin = -1/poles_lin(2);
 
-T_lin = T1_lin+T2_lin-T3_lin;   % nomoto first-order time constant
+T_lin = T1_lin+T2_lin-T3_lin;   % nomoto first-order time constant, eq. (7.24)
 
 % controller gains (example 15.7)
 Kp = wn^2*T_lin/0.0075;         % NB!! SHOULD USE K_LIN INSTEAD OF 0.0075
