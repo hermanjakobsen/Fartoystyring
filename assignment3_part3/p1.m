@@ -17,7 +17,7 @@ h  = 0.1;    % sampling time [s]
 Ns = 10000;  % no. of samples
 
 psi_ref = 10 * pi/180;  % desired yaw angle (rad)
-U_d = 7;                % desired cruise speed (m/s)
+U_d = 9;                % desired cruise speed (m/s)
                
 % ship parameters 
 m = 17.0677e6;          % mass (kg)
@@ -122,20 +122,23 @@ b_lin = [-2*U_d*Y_delta -2*U_d*N_delta]';
 
 [num, den] = ss2tf(-M_lin_inv*N_lin, M_lin_inv*b_lin, [0 1], 0);
 
-K_lin = num(3)/den(3);            % gain can be found by using the steady-state value (s=0) of the transfer function
 
-poles_lin = roots(den);
+%poles_lin = roots(den);
 zeros_lin = roots(num);
+temp1 = 1/(2*den(1,1))*(-den(1,2)+sqrt(den(1,2)^2-4*den(1,1)*den(1,3)));
+temp2 = 1/(2*den(1,1))*(-den(1,2)-sqrt(den(1,2)^2-4*den(1,1)*den(1,3)));
+
 
 T3_lin = -1/zeros_lin;   
-T1_lin = -1/poles_lin(1);
-T2_lin = -1/poles_lin(2);
+T1_lin = -1/temp1;
+T2_lin = -1/temp2;
 
 T_lin = T1_lin+T2_lin-T3_lin;   % nomoto first-order time constant, eq. (7.24)
+K_lin = num(3)/den(3);            % gain can be found by using the steady-state value (s=0) of the transfer function
 
 % controller gains (example 15.7)
-Kp = wn^2*T_lin/0.0075;         % NB!! SHOULD USE K_LIN INSTEAD OF 0.0075
-Kd = (2*zeta*wn*T_lin-1)/0.0075;
+Kp = wn^2*T_lin/K_lin;         % NB!! SHOULD USE K_LIN INSTEAD OF 0.0075
+Kd = 2*zeta*wn*(T_lin/K_lin)-1/K_lin;
 Ki = wn/10*Kp;
 
 % initial states
@@ -232,7 +235,7 @@ for i=1:Ns+1
         
     % control law
     e_psi = ssa(eta(3)-psi_d);
-    e_r = nu(3)-r_d;
+    e_r = ssa(nu(3)-r_d);
     delta_c_unsat = -Kp*e_psi-Ki*z-Kd*e_r;    % rudder angle command (rad)
     
     % ship dynamics
@@ -257,7 +260,11 @@ for i=1:Ns+1
     % propeller dynamics
     Im = 100000; Tm = 10; Km = 0.6;             % propulsion parameters
     
-    Td = U_d*Xu/(t_thr-1);                      % desired thrust (N)
+    %Td = U_d*Xu/(t_thr-1);% desired thrust (N)
+    
+    %Problem 1e: added feedforward
+    Td = (U_d-nu_c(1))*Xu/(t_thr-1);  
+    
     n_d = sqrt(Td/(rho * Dia^4 * KT));          % desired propeller speed (rps)
                                                 % SHOULD ALSO HANDLE
                                                 % NEGATIVE Td
