@@ -125,13 +125,13 @@ b_lin = [-2*U_d*Y_delta -2*U_d*N_delta]';
 
 %poles_lin = roots(den);
 zeros_lin = roots(num);
-temp1 = 1/(2*den(1,1))*(-den(1,2)+sqrt(den(1,2)^2-4*den(1,1)*den(1,3)));
-temp2 = 1/(2*den(1,1))*(-den(1,2)-sqrt(den(1,2)^2-4*den(1,1)*den(1,3)));
+nomo1 = 1/(2*den(1,1))*(-den(1,2)+sqrt(den(1,2)^2-4*den(1,1)*den(1,3)));
+nomo2 = 1/(2*den(1,1))*(-den(1,2)-sqrt(den(1,2)^2-4*den(1,1)*den(1,3)));
 
 
 T3_lin = -1/zeros_lin;   
-T1_lin = -1/temp1;
-T2_lin = -1/temp2;
+T1_lin = -1/nomo1;
+T2_lin = -1/nomo2;
 
 T_lin = T1_lin+T2_lin-T3_lin;   % nomoto first-order time constant, eq. (7.24)
 K_lin = num(3)/den(3);            % gain can be found by using the steady-state value (s=0) of the transfer function
