@@ -122,23 +122,19 @@ b_lin = [-2*U_d*Y_delta -2*U_d*N_delta]';
 
 [num, den] = ss2tf(-M_lin_inv*N_lin, M_lin_inv*b_lin, [0 1], 0);
 
-
-%poles_lin = roots(den);
+poles_lin = roots(den);
 zeros_lin = roots(num);
-nomo1 = 1/(2*den(1,1))*(-den(1,2)+sqrt(den(1,2)^2-4*den(1,1)*den(1,3)));
-nomo2 = 1/(2*den(1,1))*(-den(1,2)-sqrt(den(1,2)^2-4*den(1,1)*den(1,3)));
-
 
 T3_lin = -1/zeros_lin;   
-T1_lin = -1/nomo1;
-T2_lin = -1/nomo2;
+T1_lin = -1/poles_lin(1);
+T2_lin = -1/poles_lin(2);
 
-T_lin = T1_lin+T2_lin-T3_lin;   % nomoto first-order time constant, eq. (7.24)
-K_lin = num(3)/den(3);            % gain can be found by using the steady-state value (s=0) of the transfer function
+T_lin = T1_lin+T2_lin-T3_lin;       % nomoto first-order time constant, eq. (7.24)
+K_lin = num(3)/den(3);              % gain can be found by using the steady-state value (s=0) of the transfer function
 
-% controller gains (example 15.7)
-Kp = wn^2*T_lin/K_lin;         % NB!! SHOULD USE K_LIN INSTEAD OF 0.0075
-Kd = 2*zeta*wn*(T_lin/K_lin)-1/K_lin;
+% controller gains (example 15.7 / Algorithm 15.1)
+Kp = wn^2*T_lin/K_lin;         
+Kd = (2*zeta*wn*T_lin-1)/K_lin;
 Ki = wn/10*Kp;
 
 % initial states
@@ -214,18 +210,18 @@ for i=1:Ns+1
     if t > 500
         psi_ref = -20* pi/180;  % 10-20 maneuver
     end
-    % 3rd-order reference model for yaw
+    % 3rd-order reference model for yaw, eq.(12.12)
     wref = 0.03;    % natural frequency for reference model
     Ad = [ 0 1 0
            0 0 1
-           -wref^3  -3*wref^2  -3*wref ];   % eq.(12.12)
+           -wref^3  -3*wref^2  -3*wref ];
     Bd = [0 0 wref^3 ]';
     xd_dot = Ad * xd + Bd * psi_ref;
     
     
     psi_d = xd(1);  % desired yaw angle (rad)
     r_d = xd(2);    % desired yaw rate (rad/s)
-    u_d = U_d;
+    u_d = U_d;      % desired cruise spees (m/s)
     
     % thrust 
     thr = rho * Dia^4 * KT * abs(n) * n;    % thrust command (N)
@@ -235,7 +231,7 @@ for i=1:Ns+1
         
     % control law
     e_psi = ssa(eta(3)-psi_d);
-    e_r = ssa(nu(3)-r_d);
+    e_r = nu(3)-r_d;
     delta_c_unsat = -Kp*e_psi-Ki*z-Kd*e_r;    % rudder angle command (rad)
     
     % ship dynamics
@@ -260,18 +256,15 @@ for i=1:Ns+1
     % propeller dynamics
     Im = 100000; Tm = 10; Km = 0.6;             % propulsion parameters
     
-    %Td = U_d*Xu/(t_thr-1);% desired thrust (N)
+    % added feedforward
+    Td = (u_d-nu_c(1))*Xu/(t_thr-1);            % desired thrust (N)
     
-    %Problem 1e: added feedforward
-    Td = (U_d-nu_c(1))*Xu/(t_thr-1);  
-    
-    n_d = sqrt(Td/(rho * Dia^4 * KT));          % desired propeller speed (rps)
-                                                % SHOULD ALSO HANDLE
-                                                % NEGATIVE Td
-    
+    n_term = Td/(rho * Dia^4 * KT);             
+    n_d = sign(n_term) * sqrt(abs(n_term));     % desired propeller speed (rps)
+                                                
     Qf = 0;                                     % friction torque (Nm)
     Qd =  rho * Dia^4 * KQ * abs(n_d) * n_d;    % desired propeller moment (Nm)
-    Y = Qd/Km;                                  % control input
+    Y = Qd/Km;                                  % control input to main motor
     
     Qm_dot = -Qm/Tm + Km/Tm*Y;
     n_dot = (Qm-Q-Qf)/Im;                      
