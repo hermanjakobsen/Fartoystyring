@@ -150,7 +150,8 @@ Qm = 0;             % produced torque by main motor (Nm)
 wp = 2;             % which waypoint the ship is currently targeting for
 WP = load('WP.mat'); % waypoints
 WP = WP.WP;
-chi_d = 0;           
+chi_d = 0;  
+beta_c = 0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
@@ -230,7 +231,8 @@ for i=1:Ns+1
             wp = wp + 1;
         end
     end
-    psi_ref = chi_d; % Setting psi ref
+    beta_c = nu(2)/norm([nu(1) nu(2)]);
+    psi_ref = chi_d - beta_c; % Setting psi ref
     
     % 3rd-order reference model for yaw, eq.(12.12)
     wref = 0.13;    % natural frequency for reference model

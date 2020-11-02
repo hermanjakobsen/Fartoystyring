@@ -57,7 +57,7 @@ MRB = [ m 0    0
 Minv = inv(MRB + MA); % Added mass is included to give the total inertia
 
 % ocean current in NED
-Vc = 1;                             % current speed (m/s)
+Vc = 0;                             % current speed (m/s)
 betaVc = deg2rad(45);               % current direction (rad)
 
 % wind expressed in NED
