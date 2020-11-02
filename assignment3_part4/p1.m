@@ -14,7 +14,7 @@ clc;
 % USER INPUTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 h  = 0.1;    % sampling time [s]
-Ns = 70000;  % no. of samples
+Ns = 100000;  % no. of samples
 
 psi_ref = 0;            % desired yaw angle (rad)
 U_d = 7;                % desired cruise speed (m/s)
@@ -213,7 +213,7 @@ for i=1:Ns+1
     % guidance
     [~,number_wp] = size(WP);
     
-    if wp < number_wp
+    if wp <= number_wp
 
         wp_x1 = WP(1, wp-1);
         wp_y1 = WP(2, wp-1);
@@ -224,10 +224,10 @@ for i=1:Ns+1
         ship_y = eta(2);
         chi_d = guidance(wp_x1, wp_y1, wp_x2, wp_y2, ship_x, ship_y); 
         
-        
-    % No more waypoints
-    else
-        chi_d = 0;
+        dist_to_wp = norm([wp_x2, wp_y2] - [ship_x ship_y]);
+        if dist_to_wp < 3000
+            wp = wp +1;
+        end
     end
     psi_ref = chi_d; % Setting psi ref
     
@@ -354,3 +354,13 @@ title('Actual surge velocity (m/s)'); xlabel('time (s)');
 subplot(212)
 plot(t,v,'linewidth',2);
 title('Actual sway velocity (m/s)'); xlabel('time (s)');
+
+figure(4)
+figure(gcf)
+hold on
+siz=size(WP);
+for ii=1:(siz(2)-1)   
+plot([WP(2,ii), WP(2,ii+1)], [WP(1,ii), WP(1,ii+1)], 'r-x')
+end
+plot(y,x,'linewidth',2); axis('equal')
+title('North-East positions (m)');
