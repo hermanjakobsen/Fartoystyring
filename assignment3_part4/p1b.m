@@ -9,12 +9,13 @@
 
 clear;
 clc;
+close all;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % USER INPUTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 h  = 0.1;    % sampling time [s]
-Ns = 100000;  % no. of samples
+Ns = 80000;  % no. of samples
 
 psi_ref = 0;            % desired yaw angle (rad)
 U_d = 7;                % desired cruise speed (m/s)
@@ -225,8 +226,8 @@ for i=1:Ns+1
         chi_d = guidance(wp_x1, wp_y1, wp_x2, wp_y2, ship_x, ship_y); 
         
         dist_to_wp = norm([wp_x2, wp_y2] - [ship_x ship_y]);
-        if dist_to_wp < 3000
-            wp = wp +1;
+        if dist_to_wp < 0.25*norm([wp_x2, wp_y2] - [wp_x1, wp_y1])
+            wp = wp + 1;
         end
     end
     psi_ref = chi_d; % Setting psi ref
