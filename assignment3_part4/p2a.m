@@ -155,7 +155,7 @@ chi_d = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-simdata = zeros(Ns+1,18);                % table of simulation data
+simdata = zeros(Ns+1,19);                % table of simulation data
 
 for i=1:Ns+1
 
@@ -295,7 +295,7 @@ for i=1:Ns+1
     n_dot = (Qm-Q-Qf)/Im;                      
     
     % store simulation data in a table (for testing)
-    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z beta_c beta chi];       
+    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z beta_c beta chi chi_d];       
      
     % Euler integration
     xd = euler2(xd_dot,xd,h);               % reference model
@@ -329,16 +329,17 @@ z       = simdata(:,15);
 beta    = (180/pi) * simdata(:,16);     % deg
 beta_c  = (180/pi) * simdata(:,17);     % deg
 chi     = (180/pi) * simdata(:,18);     % deg
+chi_d     = (180/pi) * simdata(:,19);     % deg
 
 figure(1)
 hold on;
 plot(t, beta);
 plot(t, beta_c);
 plot(t, chi);
-plot(t, psi_d);
+plot(t, chi_d);
 plot(t, psi);
 title('Heading vs crab angle vs course');
-legend('$\beta$', '$\beta_c$', '$\chi$', '$\psi_d$', '$\psi$','Interpreter','latex');
+legend('$\beta$', '$\beta_c$', '$\chi$', '$\chi_d$', '$\psi$','Interpreter','latex');
 xlabel('time (s)');
 ylabel('(deg)');
 grid on;
