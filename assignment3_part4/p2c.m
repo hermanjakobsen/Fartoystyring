@@ -227,7 +227,7 @@ for i=1:Ns+1
         chi_d = guidance(wp_x1, wp_y1, wp_x2, wp_y2, ship_x, ship_y); 
         
         dist_to_wp = norm([wp_x2, wp_y2] - [ship_x ship_y]);
-        if dist_to_wp < 0.25*norm([wp_x2, wp_y2] - [wp_x1, wp_y1])
+        if dist_to_wp < 2000
             wp = wp + 1;
         end
     end
