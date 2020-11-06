@@ -226,14 +226,14 @@ for i=1:Ns+1
         chi_d = guidance(wp_x1, wp_y1, wp_x2, wp_y2, ship_x, ship_y); 
         
         dist_to_wp = norm([wp_x2, wp_y2] - [ship_x ship_y]);
-        if dist_to_wp < 0.25*norm([wp_x2, wp_y2] - [wp_x1, wp_y1])
+        if dist_to_wp < 2000
             wp = wp + 1;
         end
     end
     psi_ref = chi_d; % Setting psi ref
     
     % 3rd-order reference model for yaw, eq.(12.12)
-    wref = 0.13;    % natural frequency for reference model
+    wref = 0.1;    % natural frequency for reference model
     Ad = [ 0 1 0
            0 0 1
            -wref^3  -3*wref^2  -3*wref ];
