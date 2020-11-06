@@ -156,7 +156,7 @@ beta_c = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-simdata = zeros(Ns+1,15);                % table of simulation data
+simdata = zeros(Ns+1,19);                % table of simulation data
 
 for i=1:Ns+1
 
@@ -231,11 +231,14 @@ for i=1:Ns+1
             wp = wp + 1;
         end
     end
-    beta_c = nu(2)/norm([nu(1) nu(2)]);
-    psi_ref = chi_d - beta_c; % Setting psi ref
+    beta_c = asin(nu(2)/norm([nu(1) nu(2)]));   % crab angle
+    beta = asin((nu(2)-nu_c(2))/norm([nu(1)-nu_c(1) nu(2)-nu_c(2)])); % sideslip
+    
+    chi = eta(3) + beta_c;                      % course
+    psi_ref = chi_d - beta_c;                   % Setting psi ref with crab angle compensation
     
     % 3rd-order reference model for yaw, eq.(12.12)
-    wref = 0.13;    % natural frequency for reference model
+    wref = 0.10;    % natural frequency for reference model
     Ad = [ 0 1 0
            0 0 1
            -wref^3  -3*wref^2  -3*wref ];
@@ -293,7 +296,7 @@ for i=1:Ns+1
     n_dot = (Qm-Q-Qf)/Im;                      
     
     % store simulation data in a table (for testing)
-    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z];       
+    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z beta_c beta chi chi_d];        
      
     % Euler integration
     xd = euler2(xd_dot,xd,h);               % reference model
@@ -324,46 +327,20 @@ u_d     = simdata(:,12);                % m/s
 psi_d   = (180/pi) * simdata(:,13);     % deg
 r_d     = (180/pi) * simdata(:,14);     % deg/s
 z       = simdata(:,15); 
+beta    = (180/pi) * simdata(:,16);     % deg
+beta_c  = (180/pi) * simdata(:,17);     % deg
+chi     = (180/pi) * simdata(:,18);     % deg
+chi_d   = (180/pi) * simdata(:,19);     % deg
 
 figure(1)
-figure(gcf)
-subplot(311)
-plot(y,x,'linewidth',2); axis('equal')
-title('North-East positions (m)'); xlabel('time (s)'); 
-subplot(312)
-plot(t,psi,t,psi_d,'linewidth',2);
-title('Actual and desired yaw angles (deg)'); xlabel('time (s)');
-subplot(313)
-plot(t,r,t,r_d,'linewidth',2);
-title('Actual and desired yaw rates (deg/s)'); xlabel('time (s)');
-
-figure(2)
-figure(gcf)
-subplot(311)
-plot(t,u,t,u_d,'linewidth',2);
-title('Actual and desired surge velocities (m/s)'); xlabel('time (s)');
-subplot(312)
-plot(t,n,t,n_d,'linewidth',2);
-title('Actual and commanded propeller speed (rpm)'); xlabel('time (s)');
-subplot(313)
-plot(t,delta,t,delta_c,'linewidth',2);
-title('Actual and commanded rudder angles (deg)'); xlabel('time (s)');
-
-figure(3) 
-figure(gcf)
-subplot(211)
-plot(t,u,'linewidth',2);
-title('Actual surge velocity (m/s)'); xlabel('time (s)');
-subplot(212)
-plot(t,v,'linewidth',2);
-title('Actual sway velocity (m/s)'); xlabel('time (s)');
-
-figure(4)
-figure(gcf)
-hold on
-siz=size(WP);
-for ii=1:(siz(2)-1)   
-plot([WP(2,ii), WP(2,ii+1)], [WP(1,ii), WP(1,ii+1)], 'r-x')
-end
-plot(y,x,'linewidth',2); axis('equal')
-title('North-East positions (m)');
+hold on;
+plot(t, beta);
+plot(t, beta_c);
+plot(t, chi);
+plot(t, chi_d);
+plot(t, psi);
+title('Heading vs crab angle vs course');
+legend('$\beta$', '$\beta_c$', '$\chi$', '$\chi_d$', '$\psi$','Interpreter','latex');
+xlabel('time (s)');
+ylabel('(deg)');
+grid on;
