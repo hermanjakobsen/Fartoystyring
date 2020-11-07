@@ -155,9 +155,10 @@ chi_d = 0;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-simdata = zeros(Ns+1,15);                % table of simulation data
+simdata = zeros(Ns+1,16);                % table of simulation data
 
 for i=1:Ns+1
+    eta(3) = wrapTo2Pi(eta(3));         % solve "plotting bug" of desired vs actual course angle
 
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
@@ -233,7 +234,7 @@ for i=1:Ns+1
     psi_ref = chi_d; % Setting psi ref
     
     % 3rd-order reference model for yaw, eq.(12.12)
-    wref = 0.1;    % natural frequency for reference model
+    wref = 0.05;    % natural frequency for reference model
     Ad = [ 0 1 0
            0 0 1
            -wref^3  -3*wref^2  -3*wref ];
@@ -291,7 +292,7 @@ for i=1:Ns+1
     n_dot = (Qm-Q-Qf)/Im;                      
     
     % store simulation data in a table (for testing)
-    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z];       
+    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z e_psi];       
      
     % Euler integration
     xd = euler2(xd_dot,xd,h);               % reference model
@@ -322,6 +323,7 @@ u_d     = simdata(:,12);                % m/s
 psi_d   = (180/pi) * simdata(:,13);     % deg
 r_d     = (180/pi) * simdata(:,14);     % deg/s
 z       = simdata(:,15); 
+e_psi   = simdata(:,16);
 
 figure(1)
 figure(gcf)

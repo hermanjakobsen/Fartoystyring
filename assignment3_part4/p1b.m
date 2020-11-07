@@ -158,7 +158,7 @@ chi_d = 0;
 simdata = zeros(Ns+1,15);                % table of simulation data
 
 for i=1:Ns+1
-
+    eta(3) = wrapTo2Pi(eta(3));         % solve "plotting bug" of desired vs actual course angle
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
     

@@ -15,7 +15,7 @@ close all;
 % USER INPUTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 h  = 0.1;    % sampling time [s]
-Ns = 70000;  % no. of samples
+Ns = 80000;  % no. of samples
 
 psi_ref = 0;            % desired yaw angle (rad)
 U_d = 7;                % desired cruise speed (m/s)
@@ -162,7 +162,8 @@ kappa = 4;
 simdata = zeros(Ns+1,19);                % table of simulation data
 
 for i=1:Ns+1
-
+    eta(3) = wrapTo2Pi(eta(3));         % solve "plotting bug" of desired vs actual course angle
+    
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
     
@@ -245,7 +246,7 @@ for i=1:Ns+1
     psi_ref = chi_d;                            % Setting psi ref
     
     % 3rd-order reference model for yaw, eq.(12.12)
-    wref = 0.10;    % natural frequency for reference model
+    wref = 0.05;    % natural frequency for reference model
     Ad = [ 0 1 0
            0 0 1
            -wref^3  -3*wref^2  -3*wref ];

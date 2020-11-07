@@ -10,4 +10,5 @@ function [chi_d] = guidance(x1, y1, x2, y2, ship_x, ship_y)
    
     % desired course angle
     chi_d = pi_p - atan(Kp*y_e); 
+    chi_d = wrapTo2Pi(chi_d);
 end
