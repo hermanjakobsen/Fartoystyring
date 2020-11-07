@@ -138,7 +138,30 @@ Kp = wn^2*T_lin/K_lin;
 Kd = (2*zeta*wn*T_lin-1)/K_lin;
 Ki = wn/10*Kp;
 
-% initial states
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                    
+% State Estimation
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+A_est = [   0   1           0 
+            0   -1/T_lin    -K_lin/T_lin
+            0   0           0            ];
+        
+B_est = [0  K_lin/T_lin     0]';
+
+E_est = [   0   0           
+            1   0    
+            0   1   ];
+        
+C_est = [1  0   0];
+
+%disp(rank(obsv(A_est, C_est)));
+
+% standard deviation for measurement noise
+sigma_psi = deg2rad(0.5);
+sigma_r = deg2rad(0.1);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                    
+% Initial states
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 eta = [0 0 0]';
 nu  = [0.1 0 0]';
 nu_c = [0 0 0]';    % current velocities
@@ -154,14 +177,20 @@ chi_d = 0;
 y_int = 0; 
 delta_los = 1000;
 kappa = 4;
+psi_meas = 0;
+r_meas = 0;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-simdata = zeros(Ns+1,19);                % table of simulation data
+simdata = zeros(Ns+1,21);                % table of simulation data
 
 for i=1:Ns+1
+    % Noisy measurement
+    psi_meas = eta(3) + normrnd(0,sigma_psi);
+    r_meas = nu(3) + normrnd(0,sigma_r);
+    
     eta(3) = wrapTo2Pi(eta(3));         % solve "plotting bug" of desired vs actual yaw angle
     
     t = (i-1) * h;                      % time (s)
@@ -304,7 +333,7 @@ for i=1:Ns+1
     n_dot = (Qm-Q-Qf)/Im;                      
     
     % store simulation data in a table (for testing)
-    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z beta_c beta chi chi_d];       
+    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z beta_c beta chi chi_d psi_meas r_meas];       
      
     % Euler integration
     xd = euler2(xd_dot,xd,h);               % reference model
@@ -313,7 +342,7 @@ for i=1:Ns+1
     eta = euler2(eta_dot,eta,h);
     nu  = euler2(nu_dot,nu,h);
     delta = euler2(delta_dot,delta,h);   
-    n  = euler2(n_dot,n,h);    
+    n  = euler2(n_dot,n,h);
     
 end
 
@@ -339,7 +368,8 @@ beta    = (180/pi) * simdata(:,16);     % deg
 beta_c  = (180/pi) * simdata(:,17);     % deg
 chi     = (180/pi) * simdata(:,18);     % deg
 chi_d   = (180/pi) * simdata(:,19);     % deg
-
+psi_meas = (180/pi) * simdata(:,20);    % deg
+r_meas   = (180/pi) * simdata(:,21);    % deg/s
 
 figure(1)
 figure(gcf)
@@ -384,15 +414,20 @@ end
 plot(y,x,'linewidth',2); axis('equal')
 title('North-East positions (m)');
 
-figure(5)
-hold on;
-plot(t, beta);
-plot(t, beta_c);
-plot(t, chi);
-plot(t, chi_d);
-plot(t, psi);
-title('Heading vs crab angle vs course');
-legend('$\beta$', '$\beta_c$', '$\chi$', '$\chi_d$', '$\psi$','Interpreter','latex');
-xlabel('time (s)');
-ylabel('(deg)');
-grid on;
+% figure(5)
+% hold on;
+% xlabel('time (s)');
+% ylabel('(deg)');
+% plot(t, psi_meas);
+% plot(t, psi);
+% legend('measured', 'true');
+% title('True vs measured yaw angle');
+% 
+% figure(6)
+% hold on;
+% xlabel('time (s)');
+% ylabel('(deg/s)');
+% plot(t, r_meas);
+% plot(t, r);
+% legend('measured', 'true');
+% title('True vs measured yaw rate');
