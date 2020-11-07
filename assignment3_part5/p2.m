@@ -15,7 +15,7 @@ close all;
 % USER INPUTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 h  = 0.1;    % sampling time [s]
-Ns = 70000;  % no. of samples
+Ns = 80000;  % no. of samples
 
 psi_ref = 0;            % desired yaw angle (rad)
 U_d = 7;                % desired cruise speed (m/s)
@@ -150,16 +150,20 @@ Qm = 0;             % produced torque by main motor (Nm)
 wp = 2;             % which waypoint the ship is currently targeting for
 WP = load('WP.mat'); % waypoints
 WP = WP.WP;
-chi_d = 0;  
-beta_c = 0;
+chi_d = 0; 
+y_int = 0; 
+delta_los = 1000;
+kappa = 4;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-simdata = zeros(Ns+1,15);                % table of simulation data
+simdata = zeros(Ns+1,19);                % table of simulation data
 
 for i=1:Ns+1
-
+    eta(3) = wrapTo2Pi(eta(3));         % solve "plotting bug" of desired vs actual yaw angle
+    
     t = (i-1) * h;                      % time (s)
     R = Rzyx(0,0,eta(3));
     
@@ -224,18 +228,25 @@ for i=1:Ns+1
         wp_y2 = WP(2, wp);
         ship_x = eta(1);
         ship_y = eta(2);
-        chi_d = guidance(wp_x1, wp_y1, wp_x2, wp_y2, ship_x, ship_y); 
+        
+        % ILOS Guidance
+        [chi_d, y_e] = guidanceInt(wp_x1, wp_y1, wp_x2, wp_y2, ship_x, ship_y, delta_los, kappa, y_int); 
+        y_int_dot = (delta_los * y_e) / (delta_los^2 + (y_e+kappa*y_int)^2);
+        y_int = euler2(y_int_dot,y_int,h);
         
         dist_to_wp = norm([wp_x2, wp_y2] - [ship_x ship_y]);
-        if dist_to_wp < 0.25*norm([wp_x2, wp_y2] - [wp_x1, wp_y1])
+        if dist_to_wp < 2000
             wp = wp + 1;
         end
     end
-    beta_c = nu(2)/norm([nu(1) nu(2)]);
-    psi_ref = chi_d - beta_c; % Setting psi ref
+    beta_c = asin(nu(2)/norm([nu(1) nu(2)]));   % crab angle
+    beta = asin((nu(2)-nu_c(2))/norm([nu(1)-nu_c(1) nu(2)-nu_c(2)])); % sideslip
+    
+    chi = eta(3) + beta_c;                      % course
+    psi_ref = chi_d;                            % Setting psi ref
     
     % 3rd-order reference model for yaw, eq.(12.12)
-    wref = 0.13;    % natural frequency for reference model
+    wref = 0.05;    % natural frequency for reference model
     Ad = [ 0 1 0
            0 0 1
            -wref^3  -3*wref^2  -3*wref ];
@@ -293,7 +304,7 @@ for i=1:Ns+1
     n_dot = (Qm-Q-Qf)/Im;                      
     
     % store simulation data in a table (for testing)
-    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z];       
+    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z beta_c beta chi chi_d];       
      
     % Euler integration
     xd = euler2(xd_dot,xd,h);               % reference model
@@ -324,6 +335,11 @@ u_d     = simdata(:,12);                % m/s
 psi_d   = (180/pi) * simdata(:,13);     % deg
 r_d     = (180/pi) * simdata(:,14);     % deg/s
 z       = simdata(:,15); 
+beta    = (180/pi) * simdata(:,16);     % deg
+beta_c  = (180/pi) * simdata(:,17);     % deg
+chi     = (180/pi) * simdata(:,18);     % deg
+chi_d   = (180/pi) * simdata(:,19);     % deg
+
 
 figure(1)
 figure(gcf)
@@ -367,3 +383,16 @@ plot([WP(2,ii), WP(2,ii+1)], [WP(1,ii), WP(1,ii+1)], 'r-x')
 end
 plot(y,x,'linewidth',2); axis('equal')
 title('North-East positions (m)');
+
+figure(5)
+hold on;
+plot(t, beta);
+plot(t, beta_c);
+plot(t, chi);
+plot(t, chi_d);
+plot(t, psi);
+title('Heading vs crab angle vs course');
+legend('$\beta$', '$\beta_c$', '$\chi$', '$\chi_d$', '$\psi$','Interpreter','latex');
+xlabel('time (s)');
+ylabel('(deg)');
+grid on;
