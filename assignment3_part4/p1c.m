@@ -164,8 +164,8 @@ for i=1:Ns+1
     R = Rzyx(0,0,eta(3));
     
     % current (should be added here)
-    nu_c(1) = Vc*cos(betaVc - eta(3));  % surge current
-    nu_c(2) = Vc*sin(betaVc - eta(3));  % sway current
+    nu_c(1) = 0;%Vc*cos(betaVc - eta(3));  % surge current
+    nu_c(2) = 0;%Vc*sin(betaVc - eta(3));  % sway current
     
     nu_r = nu - nu_c;
     
