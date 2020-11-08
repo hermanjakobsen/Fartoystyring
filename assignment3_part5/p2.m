@@ -14,8 +14,10 @@ close all;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % USER INPUTS
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-h  = 0.1;    % sampling time [s]
-Ns = 80000;  % no. of samples
+h  = 0.1;           % sampling time [s]
+Ns = 80000;         % no. of samples
+
+sim_with_est = 1;   % decide whether to sim with estimated values or direct noisy measurement (1 or 0)
 
 psi_ref = 0;            % desired yaw angle (rad)
 U_d = 7;                % desired cruise speed (m/s)
@@ -102,8 +104,13 @@ Bu = @(u_r,delta) [ (1-t_thr)  -u_r^2 * X_delta2 * delta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % rudder control law
-wb = 0.06;
-zeta = 1;
+if sim_with_est == 1
+   wb = 0.03;
+   zeta = 0.2;  
+else
+   wb = 0.06;
+   zeta = 1; 
+end
 wn = 1 / sqrt( 1 - 2*zeta^2 + sqrt( 4*zeta^4 - 4*zeta^2 + 2) ) * wb;
 
 % linearized sway-yaw model (see (7.15)-(7.19) in Fossen (2021)) used
@@ -139,8 +146,9 @@ Kd = (2*zeta*wn*T_lin-1)/K_lin;
 Ki = wn/10*Kp;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                    
-% State Estimation
+% State Estimation (Kalman Filter)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% system matrices
 A_est = [   0   1           0 
             0   -1/T_lin    -K_lin/T_lin
             0   0           0            ];
@@ -155,9 +163,23 @@ C_est = [1  0   0];
 
 %disp(rank(obsv(A_est, C_est)));
 
+% discretized matrices (first order)
+A_d = eye(3) + h*A_est;
+B_d = h*B_est;
+C_d = C_est;
+D_d = 0;
+E_d = h*E_est;
+
 % standard deviation for measurement noise
 sigma_psi = deg2rad(0.5);
 sigma_r = deg2rad(0.1);
+
+% covariance matrices for process and measurement noise
+sigma_q1 = 1 / 10000;   % should be tuned to get desired convergence
+sigma_q2 = 1 / 100000;   % should be tuned to get desired convergence
+
+Q_d = diag([sigma_q1^2 sigma_q2^2]);
+R_d = sigma_psi^2;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%                    
 % Initial states
@@ -177,14 +199,18 @@ chi_d = 0;
 y_int = 0; 
 delta_los = 1000;
 kappa = 4;
-psi_meas = 0;
-r_meas = 0;
 
+% initial states for Kalman filter
+x0 = [0 0 0]';                 % [yaw_angle, yaw_rate, rudder_bias]
+P0 = diag([1/1000 1/1000000 1/10000]);     % initial covariance matrix
+
+x_prd = x0;
+P_prd = P0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % MAIN LOOP
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-simdata = zeros(Ns+1,21);                % table of simulation data
+simdata = zeros(Ns+1,24);                % table of simulation data
 
 for i=1:Ns+1
     % Noisy measurement
@@ -291,10 +317,30 @@ for i=1:Ns+1
     
     % torque
     Q = rho * Dia^4 * KQ * abs(n) * n;      % torque command (Nm)
+    
+    % kalman filter
+    K = P_prd * C_d' * inv(C_d * P_prd * C_d' + R_d);   % filter gain
+    IKC = eye(size(x0,1)) - K* C_d;
+    
+    y = psi_meas;   % measurement
+    
+    x_hat = x_prd + K * ( ssa(y - C_d * x_prd) - D_d * delta ); % corrector
+    P_hat = IKC * P_prd * IKC' + K * R_d * K';
+    
+    x_prd = A_d * x_hat + B_d * delta;      % predictor
+    P_prd = A_d * P_hat * A_d' + E_d * Q_d * E_d';
+    
+    x_hat(1) = wrapTo2Pi(x_hat(1));        % fix plotting bug
         
     % control law
-    e_psi = ssa(eta(3)-psi_d);
-    e_r = nu(3)-r_d;
+    if sim_with_est == 1
+       e_psi = ssa(x_hat(1) - psi_d);  % estimated value
+       e_r = x_hat(2) - r_d;
+    else
+       e_psi = ssa(psi_meas-psi_d);    % direct noisy measurement
+       e_r = r_meas-r_d;  
+    end
+    
     delta_c_unsat = -Kp*e_psi-Ki*z-Kd*e_r;    % rudder angle command (rad)
     
     % ship dynamics
@@ -333,7 +379,7 @@ for i=1:Ns+1
     n_dot = (Qm-Q-Qf)/Im;                      
     
     % store simulation data in a table (for testing)
-    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z beta_c beta chi chi_d psi_meas r_meas];       
+    simdata(i,:) = [t n_d delta_c n delta eta' nu' u_d psi_d r_d z beta_c beta chi chi_d psi_meas r_meas x_hat'];       
      
     % Euler integration
     xd = euler2(xd_dot,xd,h);               % reference model
@@ -370,6 +416,10 @@ chi     = (180/pi) * simdata(:,18);     % deg
 chi_d   = (180/pi) * simdata(:,19);     % deg
 psi_meas = (180/pi) * simdata(:,20);    % deg
 r_meas   = (180/pi) * simdata(:,21);    % deg/s
+psi_est = (180/pi) * simdata(:,22);     % deg
+r_est   = (180/pi) * simdata(:,23);     % deg/s
+bias_est = (180/pi) * simdata(:,24);    % deg
+
 
 figure(1)
 figure(gcf)
@@ -414,6 +464,7 @@ end
 plot(y,x,'linewidth',2); axis('equal')
 title('North-East positions (m)');
 
+% noisy measurement vs true value
 % figure(5)
 % hold on;
 % xlabel('time (s)');
@@ -430,4 +481,25 @@ title('North-East positions (m)');
 % plot(t, r_meas);
 % plot(t, r);
 % legend('measured', 'true');
-% title('True vs measured yaw rate');
+
+% estimated states vs true value 
+% figure(7)
+% hold on;
+% xlabel('time (s)');
+% ylabel('(deg)');
+% plot(t, psi-psi_est);
+% title('Yaw angle error between estimated and true value');
+% 
+% figure(8)
+% hold on;
+% xlabel('time (s)');
+% ylabel('(deg/s)');
+% plot(t, r-r_est);
+% title('Yaw rate error between estimated and true value');
+% 
+% figure(9)
+% hold on;
+% xlabel('time (s)');
+% ylabel('(deg)');
+% plot(t, bias_est);
+% title('Estimated rudder bias');
